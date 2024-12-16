@@ -26,7 +26,7 @@ def extract_features(image_path, model):
     return features.flatten()  # Tek boyutlu bir vektör döndür
 
 # 3. Mevcut Milvus Koleksiyonuna Bağlanma ve Vektör Ekleme
-def add_vector_to_existing_collection(db_name,collection_name, feature_vector, category):
+def add_vector_to_existing_collection(db_name,collection_name, feature_vector_list, category):
     # Milvus'a bağlan
     connections.connect("default", host="127.0.0.1", port="19530",db_name=db_name)
     
@@ -39,14 +39,14 @@ def add_vector_to_existing_collection(db_name,collection_name, feature_vector, c
     collection = Collection(name=collection_name)
 
     # Vektörü koleksiyona ekle
-    insert_result = collection.insert([[feature_vector_list], [category]])
+    insert_result = collection.insert([[feature_vector_list],[4] ,[category],['2024-12-15']])
     print(f"Vektör başarıyla {collection_name} koleksiyonuna eklendi. ID: {insert_result.primary_keys}")
 
 
 # Ana Akış
 if __name__ == "__main__":
     # Görüntü yolu
-    image_path = "some/path"  # Analiz edilecek görüntü dosyası
+    image_path = "C:/Users/harun_rvth/OneDrive/Desktop/bear4.jpg"  # Analiz edilecek görüntü dosyası
 
     # Özellik çıkartma
     feature_vector = extract_features(image_path, feature_extractor)
