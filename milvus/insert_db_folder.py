@@ -6,6 +6,7 @@ from tensorflow.keras.models import Model
 import cv2
 import numpy as np
 from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
+from datetime import datetime
 
 # ResNet50 Modelini Hazırlayın
 def load_feature_extractor(output_dim=1024):
@@ -36,8 +37,10 @@ def create_or_get_collection(db_name, collection_name, vector_dim):
         print(f"{collection_name} koleksiyonu oluşturuluyor...")
         fields = [
             FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=vector_dim),
-            FieldSchema(name="category", dtype=DataType.VARCHAR, max_length=255)
+            FieldSchema(name="image_vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim),
+            FieldSchema(name="camera_data_id", dtype=DataType.VARCHAR, max_length=255),
+            FieldSchema(name="category", dtype=DataType.VARCHAR, max_length=255),
+            FieldSchema(name="date", dtype=DataType.VARCHAR, max_length=255)
         ]
         schema = CollectionSchema(fields, description="Görüntü vektör koleksiyonu")
         collection = Collection(name=collection_name, schema=schema)
@@ -48,6 +51,7 @@ def create_or_get_collection(db_name, collection_name, vector_dim):
 
 # Görüntüleri Yükleme
 def load_images_to_collection(dataset_path, collection, model):
+    camera_data_id = 2
     for category in os.listdir(dataset_path):
         category_path = os.path.join(dataset_path, category)
         if not os.path.isdir(category_path):
@@ -60,15 +64,25 @@ def load_images_to_collection(dataset_path, collection, model):
                 feature_vector = extract_features(img_path, model)
                 feature_vector_list = feature_vector.tolist()
 
-                collection.insert([[feature_vector_list], [category]])  # Database'e ekle
+                # Görüntü dosyasının tarihi alınır
+                timestamp = os.path.getmtime(img_path)
+                creation_date = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
+
+                # Koleksiyona ekle
+                collection.insert([
+                    [feature_vector_list],
+                    [camera_data_id],  # camera_data_id olarak numaralandırma
+                    [category],  # category olarak klasör adı
+                    [creation_date]  # date olarak oluşturulma tarihi
+                ])
                 print(f"{img_file} -> {category} kategorisi altında eklendi.")
+                camera_data_id += 1
             except Exception as e:
                 print(f"Hata ({img_file}): {e}")
 
-
 # Ana Akış
 if __name__ == "__main__":
-    dataset_path = "C:/Users/harun_rvth/OneDrive/Desktop/archive/PlantVillage/"  # Görüntü klasörü
+    dataset_path = "C:/Users/harun_rvth/OneDrive/Desktop/KameraData"  # Görüntü klasörü
     db_name = "AIGreenhouse"  # Veritabanı adı (Milvus'ta sadece bağlantıda kullanılır)
     collection_name = "Leaves"  # Koleksiyon adı
     vector_dim = 1024  # Vektör boyutu
