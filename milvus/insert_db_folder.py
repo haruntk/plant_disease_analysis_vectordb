@@ -28,27 +28,9 @@ def extract_features(image_path, model):
     features = model.predict(img)
     return features.flatten()  # Tek boyutlu vektör döndür
 
-# Database ve Koleksiyon Oluşturma
+# Database Veri Ekleme
 def create_or_get_collection(db_name, collection_name, vector_dim):
     connections.connect(alias="default", host="127.0.0.1", port="19530", db_name=db_name)
-    
-    # Koleksiyon mevcut mu?
-    if not utility.has_collection(collection_name):
-        print(f"{collection_name} koleksiyonu oluşturuluyor...")
-        fields = [
-            FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-            FieldSchema(name="image_vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim),
-            FieldSchema(name="camera_data_id", dtype=DataType.VARCHAR, max_length=255),
-            FieldSchema(name="category", dtype=DataType.VARCHAR, max_length=255),
-            FieldSchema(name="date", dtype=DataType.VARCHAR, max_length=255)
-        ]
-        schema = CollectionSchema(fields, description="Görüntü vektör koleksiyonu")
-        collection = Collection(name=collection_name, schema=schema)
-    else:
-        collection = Collection(name=collection_name)
-    
-    return collection
-
 # Görüntüleri Yükleme
 def load_images_to_collection(dataset_path, collection, model):
     camera_data_id = 2
